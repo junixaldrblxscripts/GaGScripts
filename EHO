@@ -82,6 +82,9 @@ end
 local escapeBtn = makeButton("Escape Police Car", 10)
 escapeBtn.BackgroundColor3 = Color3.fromRGB(200, 80, 80)
 
+local tweenToCarBtn = makeButton("Tween to Car", 450)
+tweenToCarBtn.BackgroundColor3 = Color3.fromRGB(120, 255, 255)
+
 local targetPosBox = Instance.new("TextBox")
 targetPosBox.PlaceholderText = "Target Pos X,Y,Z"
 targetPosBox.Size = UDim2.new(1, -20, 0, 25)
@@ -153,7 +156,7 @@ end
 local dropdownOpen = false
 arrowBtn.MouseButton1Click:Connect(function()
 	dropdownOpen = not dropdownOpen
-	local height = dropdownOpen and 460 or 0
+	local height = dropdownOpen and 490 or 0
 
 	TweenService:Create(dropdown, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 		Size = UDim2.new(1, 0, 0, height)
@@ -375,4 +378,24 @@ tweenDealerBtn.MouseButton1Click:Connect(function()
 	if not nearest or not nearest.PrimaryPart then return end
 	local targetPos = (nearest.PrimaryPart.CFrame * CFrame.new(0, 0, -4)).Position
 	tweenVehicleToPos(vehicle, seat, targetPos)
+end)
+
+
+tweenToCarBtn.MouseButton1Click:Connect(function()
+	local character = player.Character or player.CharacterAdded:Wait()
+	local hrp = character:WaitForChild("HumanoidRootPart")
+
+	local vehiclesFolder = workspace:FindFirstChild("Vehicles")
+	if not vehiclesFolder then return end
+
+	local myCar = vehiclesFolder:FindFirstChild(player.Name)
+	if not myCar or not myCar.PrimaryPart then return end
+
+	local targetCFrame = myCar.PrimaryPart.CFrame * CFrame.new(0, 5, -5)
+
+	local tweenInfo = TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+	local tweenGoal = { CFrame = targetCFrame }
+
+	local tween = TweenService:Create(hrp, tweenInfo, tweenGoal)
+	tween:Play()
 end)
