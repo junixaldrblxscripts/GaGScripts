@@ -338,10 +338,7 @@ serverHopBtn.MouseButton1Click:Connect(function()
 end)
 
 Players.LocalPlayer.OnTeleport:Connect(function(State)
-	if KeepInfYield and (not TeleportCheck) and queueteleport then
-		TeleportCheck = true
-		queueteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/junixaldrblxscripts/GaGScripts/refs/heads/main/EHO'))()")
-	end
+	queueteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/junixaldrblxscripts/GaGScripts/refs/heads/main/EHO'))()")
 end)
 
 --queue_on_teleport('loadstring(game:HttpGet("https://raw.githubusercontent.com/junixaldrblxscripts/GaGScripts/refs/heads/main/EHO"))()')
