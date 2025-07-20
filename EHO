@@ -1,3 +1,8 @@
+function missing(t, f, fallback)
+    if type(f) == t then return f end
+    return fallback
+end
+queueteleport =  missing("function", queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport))
 
 -- Services
 local Players = game:GetService("Players")
@@ -328,9 +333,15 @@ clothingBtn.MouseButton1Click:Connect(function()
 	tweenVehicleToPos(vehicle, seat, targetPos)
 end)
 
-
-
 serverHopBtn.MouseButton1Click:Connect(function()
 	TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
 end)
-queue_on_teleport('loadstring(game:HttpGet("https://raw.githubusercontent.com/junixaldrblxscripts/GaGScripts/refs/heads/main/EHO"))()')
+
+Players.LocalPlayer.OnTeleport:Connect(function(State)
+	if KeepInfYield and (not TeleportCheck) and queueteleport then
+		TeleportCheck = true
+		queueteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/junixaldrblxscripts/GaGScripts/refs/heads/main/EHO'))()")
+	end
+end)
+
+--queue_on_teleport('loadstring(game:HttpGet("https://raw.githubusercontent.com/junixaldrblxscripts/GaGScripts/refs/heads/main/EHO"))()')
