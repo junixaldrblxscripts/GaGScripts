@@ -119,12 +119,41 @@ clothingBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
 local serverHopBtn = makeButton("Server Hop", 380)
 serverHopBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 255)
 
+local tweenDealerBtn = makeButton("Tween to Nearest Dealer", 415)
+tweenDealerBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+
+
+local function GetNearest()
+	local character = player.Character or player.CharacterAdded:Wait()
+	local hrp = character:WaitForChild("HumanoidRootPart")
+
+	local DealersFolder
+	repeat
+		DealersFolder = workspace:FindFirstChild("Dealers")
+		task.wait()
+	until DealersFolder
+
+	local Nearest = nil
+	local Shortest = math.huge
+
+	for _, Dlr in ipairs(DealersFolder:GetChildren()) do
+		if Dlr:IsA("Model") and Dlr.PrimaryPart then
+			local dist = (hrp.Position - Dlr.PrimaryPart.Position).Magnitude
+			if dist < Shortest then
+				Shortest = dist
+				Nearest = Dlr
+			end
+		end
+	end
+
+	return Nearest
+end
 
 
 local dropdownOpen = false
 arrowBtn.MouseButton1Click:Connect(function()
 	dropdownOpen = not dropdownOpen
-	local height = dropdownOpen and 415 or 0
+	local height = dropdownOpen and 460 or 0
 
 	TweenService:Create(dropdown, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 		Size = UDim2.new(1, 0, 0, height)
@@ -341,4 +370,11 @@ Players.LocalPlayer.OnTeleport:Connect(function(State)
 	queueteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/junixaldrblxscripts/GaGScripts/refs/heads/main/EHO'))()")
 end)
 
---queue_on_teleport('loadstring(game:HttpGet("https://raw.githubusercontent.com/junixaldrblxscripts/GaGScripts/refs/heads/main/EHO"))()')
+tweenDealerBtn.MouseButton1Click:Connect(function()
+	local vehicle, seat = getVehicle()
+	if not vehicle or not seat then return end
+	local nearest = GetNearest()
+	if not nearest or not nearest.PrimaryPart then return end
+	local targetPos = (nearest.PrimaryPart.CFrame * CFrame.new(0, 0, -4)).Position
+	tweenVehicleToPos(vehicle, seat, targetPos)
+end)
