@@ -216,10 +216,7 @@ end
 
 local function tweenVehicleToPos(vehicle, seat, targetPos)
 	local startCFrame = vehicle:GetPivot()
-		local currentY = startCFrame.Position.Y
-		local targetY = targetPos.Y >= currentY and targetPos.Y or currentY
-		local flatTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
-		
+	local flatTarget = targetPos
 
 	local direction = (flatTarget - startCFrame.Position).Unit
 	local yaw = math.atan2(-direction.X, -direction.Z)
@@ -268,6 +265,7 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 		end
 	end)
 end
+
 
 flyBtn.MouseButton1Click:Connect(function()
 	local vehicle, seat = getVehicle()
