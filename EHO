@@ -1,0 +1,335 @@
+
+-- Services
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local player = Players.LocalPlayer
+
+-- GUI Setup
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "VehicleFlyGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Size = UDim2.new(0, 250, 0, 30)
+frame.Position = UDim2.new(0, 50, 0, 50)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local topbar = Instance.new("Frame")
+topbar.Name = "TopBar"
+topbar.Size = UDim2.new(1, 0, 0, 30)
+topbar.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+topbar.BorderSizePixel = 0
+topbar.Parent = frame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Size = UDim2.new(1, -30, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Vehicle Fly"
+titleLabel.TextColor3 = Color3.new(1,1,1)
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 18
+titleLabel.Parent = topbar
+
+local arrowBtn = Instance.new("TextButton")
+arrowBtn.Name = "ArrowBtn"
+arrowBtn.Size = UDim2.new(0, 30, 1, 0)
+arrowBtn.Position = UDim2.new(1, -30, 0, 0)
+arrowBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+arrowBtn.Text = "▼"
+arrowBtn.TextColor3 = Color3.new(1,1,1)
+arrowBtn.Font = Enum.Font.SourceSansBold
+arrowBtn.TextSize = 18
+arrowBtn.Parent = topbar
+
+local dropdown = Instance.new("Frame")
+dropdown.Name = "Dropdown"
+dropdown.Size = UDim2.new(1, 0, 0, 0)
+dropdown.Position = UDim2.new(0, 0, 1, 0)
+dropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+dropdown.BorderSizePixel = 0
+dropdown.ClipsDescendants = true
+dropdown.Parent = frame
+
+local function makeButton(text, yPos)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -20, 0, 30)
+	btn.Position = UDim2.new(0, 10, 0, yPos)
+	btn.BackgroundColor3 = Color3.fromRGB(80, 120, 200)
+	btn.Text = text
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 16
+	btn.Parent = dropdown
+	return btn
+end
+
+local escapeBtn = makeButton("Escape Police Car", 10)
+escapeBtn.BackgroundColor3 = Color3.fromRGB(200, 80, 80)
+
+local targetPosBox = Instance.new("TextBox")
+targetPosBox.PlaceholderText = "Target Pos X,Y,Z"
+targetPosBox.Size = UDim2.new(1, -20, 0, 25)
+targetPosBox.Position = UDim2.new(0, 10, 0, 50)
+targetPosBox.Parent = dropdown
+
+local goToBtn = makeButton("Velocity Tween To", 85)
+goToBtn.BackgroundColor3 = Color3.fromRGB(80, 180, 120)
+
+local breakBtn = makeButton("Break Joints", 120)
+breakBtn.BackgroundColor3 = Color3.fromRGB(180, 100, 180)
+
+local sitNearestBtn = makeButton("Sit in Nearest Seat", 155)
+sitNearestBtn.BackgroundColor3 = Color3.fromRGB(100, 150, 250)
+
+local flyDistanceBox = Instance.new("TextBox")
+flyDistanceBox.PlaceholderText = "Distance (studs)"
+flyDistanceBox.Size = UDim2.new(1, -20, 0, 25)
+flyDistanceBox.Position = UDim2.new(0, 10, 0, 195)
+flyDistanceBox.Text = "200"
+flyDistanceBox.Parent = dropdown
+
+local copyPosBtn = makeButton("Copy Current Pos", 230)
+copyPosBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 100)
+
+local flyBtn = makeButton("Fly Forward", 270)
+
+local jewelryBtn = makeButton("Tween to Jewelry", 310)
+jewelryBtn.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
+
+local clothingBtn = makeButton("Tween to Clothing Store", 345)
+clothingBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+
+
+local serverHopBtn = makeButton("Server Hop", 380)
+serverHopBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 255)
+
+
+
+local dropdownOpen = false
+arrowBtn.MouseButton1Click:Connect(function()
+	dropdownOpen = not dropdownOpen
+	local height = dropdownOpen and 415 or 0
+
+	TweenService:Create(dropdown, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Size = UDim2.new(1, 0, 0, height)
+	}):Play()
+	arrowBtn.Text = dropdownOpen and "▲" or "▼"
+end)
+
+local dragging, dragInput, dragStart, startPos
+local function update(input)
+	local delta = input.Position - dragStart
+	local goalPos = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+	TweenService:Create(frame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = goalPos
+	}):Play()
+end
+
+topbar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+topbar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+local function getVehicle()
+	local character = player.Character or player.CharacterAdded:Wait()
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or not humanoid.SeatPart then return end
+
+	local seat = humanoid.SeatPart
+	local vehicle = seat:FindFirstAncestorWhichIsA("Model")
+
+	if vehicle and vehicle.PrimaryPart then
+		return vehicle, seat
+	end
+end
+
+local function tweenVehicleToPos(vehicle, seat, targetPos)
+	local startCFrame = vehicle:GetPivot()
+		local currentY = startCFrame.Position.Y
+		local targetY = targetPos.Y >= currentY and targetPos.Y or currentY
+		local flatTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
+		
+
+	local direction = (flatTarget - startCFrame.Position).Unit
+	local yaw = math.atan2(-direction.X, -direction.Z)
+	local lockedRotation = CFrame.new(flatTarget) * CFrame.Angles(0, yaw, 0)
+	local goalCFrame = lockedRotation
+
+	local distance = (startCFrame.Position - flatTarget).Magnitude
+	local maxSpeed = 80
+	local duration = distance / maxSpeed
+
+	local partCollisionMap = {}
+	for _, part in ipairs(vehicle:GetDescendants()) do
+		if part:IsA("BasePart") then
+			partCollisionMap[part] = part.CanCollide
+			part.CanCollide = false
+		end
+	end
+
+	local cfValue = Instance.new("CFrameValue")
+	cfValue.Value = startCFrame
+	local tween = TweenService:Create(cfValue, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Value = goalCFrame })
+
+	local conn
+	conn = RunService.Heartbeat:Connect(function(dt)
+		if not vehicle or not vehicle.PrimaryPart then
+			conn:Disconnect()
+			return
+		end
+
+		local current = cfValue.Value
+		local posDelta = (current.Position - vehicle.PrimaryPart.Position)
+		local velocity = posDelta / dt
+		vehicle.PrimaryPart.AssemblyLinearVelocity = Vector3.new(-25,0,0)
+		vehicle:PivotTo(current)
+	end)
+
+	tween:Play()
+	tween.Completed:Connect(function()
+		cfValue:Destroy()
+		conn:Disconnect()
+
+		for part, wasCollidable in pairs(partCollisionMap) do
+			if part and part:IsDescendantOf(vehicle) then
+				part.CanCollide = wasCollidable
+			end
+		end
+	end)
+end
+
+flyBtn.MouseButton1Click:Connect(function()
+	local vehicle, seat = getVehicle()
+	if not vehicle or not seat then return end
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	local dist = tonumber(flyDistanceBox.Text)
+	if not dist then dist = 200 end
+
+	local targetPos = root.Position + root.CFrame.LookVector * dist
+	tweenVehicleToPos(vehicle, seat, targetPos)
+end)
+
+goToBtn.MouseButton1Click:Connect(function()
+	local posText = targetPosBox.Text
+	local x, y, z = posText:match("([^,]+),%s*([^,]+),%s*([^,]+)")
+	x, y, z = tonumber(x), tonumber(y), tonumber(z)
+	if not (x and y and z) then return end
+	local vehicle, seat = getVehicle()
+	if not vehicle or not seat then return end
+	local targetPos = Vector3.new(x, y, z)
+	tweenVehicleToPos(vehicle, seat, targetPos)
+end)
+
+escapeBtn.MouseButton1Click:Connect(function()
+	local character = player.Character or player.CharacterAdded:Wait()
+	local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+	if humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	end
+end)
+
+breakBtn.MouseButton1Click:Connect(function()
+	local char = player.Character
+	if char then
+		task.defer(function()
+			char:BreakJoints()
+		end)
+		task.wait(0.1)
+	end
+end)
+
+sitNearestBtn.MouseButton1Click:Connect(function()
+	local character = player.Character
+	if not character then return end
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not (hrp and humanoid) then return end
+
+	local vehiclesFolder = workspace:FindFirstChild("Vehicles")
+	if not vehiclesFolder then return end
+
+	local myFolder = vehiclesFolder:FindFirstChild(player.Name)
+	if not myFolder then return end
+
+	local driveSeat = myFolder:FindFirstChild("DriveSeat")
+	if not driveSeat then return end
+	if driveSeat.Occupant and driveSeat.Occupant ~= humanoid then return end
+
+	local distance = (driveSeat.Position - hrp.Position).Magnitude
+	if distance <= 350 then
+		humanoid.Sit = false
+		task.wait(0.05)
+		character:SetPrimaryPartCFrame(driveSeat.CFrame * CFrame.new(0, 2, 0))
+		task.wait(0.3)
+		driveSeat:Sit(humanoid)
+	end
+end)
+
+copyPosBtn.MouseButton1Click:Connect(function()
+	local vehicle, seat = getVehicle()
+	if not vehicle then return end
+	local pos = vehicle:GetPivot().Position
+	local posStr = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
+	setclipboard(posStr)
+end)
+
+
+
+jewelryBtn.MouseButton1Click:Connect(function()
+	local vehicle, seat = getVehicle()
+	if not vehicle or not seat then return end
+	local targetPos = Vector3.new(-395, 6, 3543)
+	tweenVehicleToPos(vehicle, seat, targetPos)
+end)
+
+clothingBtn.MouseButton1Click:Connect(function()
+	local vehicle, seat = getVehicle()
+	if not vehicle or not seat then return end
+	local targetPos = Vector3.new(478, 5, -1424)
+	tweenVehicleToPos(vehicle, seat, targetPos)
+end)
+
+
+
+serverHopBtn.MouseButton1Click:Connect(function()
+	TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
+end)
