@@ -260,9 +260,7 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 
 		local velocity = (current.Position - vehicle.PrimaryPart.Position) / dt
 		local maxSpeed = 50
-		if velocity.Magnitude > maxSpeed then
-			velocity = velocity.Unit * maxSpeed
-		end
+		
 		vehicle.PrimaryPart.AssemblyLinearVelocity = velocity
 	end)
 
