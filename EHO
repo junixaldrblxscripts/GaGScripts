@@ -217,7 +217,7 @@ local function getVehicle()
 	end
 end
 
--- Full script retained by Master. Modified tweenVehicleToPos to limit max velocity to 50 and clamp turn speed
+-- Full script retained by Master. Modified tweenVehicleToPos to limit max velocity to 50 and clamp turn speed, while keeping pivot updates during tweening.
 
 local function tweenVehicleToPos(vehicle, seat, targetPos)
 	local startCFrame = vehicle:GetPivot()
@@ -231,7 +231,7 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 	local finalLookCFrame = CFrame.new(targetPos) * CFrame.Angles(0, yawToTarget, 0)
 
 	local distance = (startCFrame.Position - targetPos).Magnitude
-	local travelTime = distance / 80
+	local travelTime = distance / 50
 	local spinTime = 0.5
 
 	local partCollisionMap = {}
@@ -266,24 +266,8 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 		end
 		vehicle.PrimaryPart.AssemblyLinearVelocity = desiredVelocity
 
-		local currentCFrame = vehicle:GetPivot()
-		local currentLook = currentCFrame.LookVector
-		local targetLook = current.LookVector
-
-		local angle = math.acos(math.clamp(currentLook:Dot(targetLook), -1, 1))
-		local maxTurnSpeed = math.rad(90) -- degrees per second
-		local maxAngleStep = maxTurnSpeed * dt
-
-		local axis = currentLook:Cross(targetLook)
-		if axis.Magnitude > 0.01 and angle > 0.01 then
-			local stepAngle = math.min(angle, maxAngleStep)
-			local rot = CFrame.fromAxisAngle(axis.Unit, stepAngle)
-			local newLook = rot:VectorToWorldSpace(currentLook)
-			local newCFrame = CFrame.lookAt(currentPos, currentPos + newLook)
-			vehicle:PivotTo(CFrame.new(currentPos) * newCFrame.Rotation)
-		else
-			vehicle:PivotTo(current)
-		end
+		-- Apply full pivot update during tweening
+		vehicle:PivotTo(current)
 	end)
 
 	moveTween:Play()
@@ -301,7 +285,6 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 		end
 	end)
 end
-
 
 
 
