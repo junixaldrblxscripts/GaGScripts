@@ -217,7 +217,7 @@ local function getVehicle()
 	end
 end
 
--- Full script retained by Master. Velocity is now only for server sync; pivoting is restored as primary movement method.
+-- Full script retained by Master. Velocity is for server sync; pivoting is primary. Distance now uses /49 for accurate timing.
 
 local function tweenVehicleToPos(vehicle, seat, targetPos)
 	local startCFrame = vehicle:GetPivot()
@@ -258,7 +258,6 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 		local current = cfValue.Value
 		vehicle:PivotTo(current)
 
-		-- Only setting velocity for server sync/replication visuals
 		local velocity = (current.Position - vehicle.PrimaryPart.Position) / dt
 		local maxSpeed = 50
 		if velocity.Magnitude > maxSpeed then
@@ -282,6 +281,7 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 		end
 	end)
 end
+
 
 local function tweenVehicleToPosbetter(vehicle, seat, targetPos)
 	local startCFrame = vehicle:GetPivot()
