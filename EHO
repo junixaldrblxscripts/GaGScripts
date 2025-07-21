@@ -217,7 +217,7 @@ local function getVehicle()
 	end
 end
 
--- Full script retained by Master. Modified tweenVehicleToPos to limit max velocity to 50 and clamp turn speed, while keeping pivot updates during tweening.
+-- Full script retained by Master. Velocity is now only for server sync; pivoting is restored as primary movement method.
 
 local function tweenVehicleToPos(vehicle, seat, targetPos)
 	local startCFrame = vehicle:GetPivot()
@@ -231,7 +231,7 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 	local finalLookCFrame = CFrame.new(targetPos) * CFrame.Angles(0, yawToTarget, 0)
 
 	local distance = (startCFrame.Position - targetPos).Magnitude
-	local travelTime = distance / 50
+	local travelTime = distance / 49
 	local spinTime = 0.5
 
 	local partCollisionMap = {}
@@ -256,18 +256,15 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 		end
 
 		local current = cfValue.Value
-		local currentPos = vehicle.PrimaryPart.Position
-		local targetPos = current.Position
-
-		local desiredVelocity = (targetPos - currentPos) / dt
-		local maxSpeed = 50
-		if desiredVelocity.Magnitude > maxSpeed then
-			desiredVelocity = desiredVelocity.Unit * maxSpeed
-		end
-		vehicle.PrimaryPart.AssemblyLinearVelocity = desiredVelocity
-
-		-- Apply full pivot update during tweening
 		vehicle:PivotTo(current)
+
+		-- Only setting velocity for server sync/replication visuals
+		local velocity = (current.Position - vehicle.PrimaryPart.Position) / dt
+		local maxSpeed = 50
+		if velocity.Magnitude > maxSpeed then
+			velocity = velocity.Unit * maxSpeed
+		end
+		vehicle.PrimaryPart.AssemblyLinearVelocity = velocity
 	end)
 
 	moveTween:Play()
@@ -285,8 +282,6 @@ local function tweenVehicleToPos(vehicle, seat, targetPos)
 		end
 	end)
 end
-
-
 
 local function tweenVehicleToPosbetter(vehicle, seat, targetPos)
 	local startCFrame = vehicle:GetPivot()
