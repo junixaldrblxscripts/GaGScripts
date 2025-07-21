@@ -217,7 +217,66 @@ local function getVehicle()
 	end
 end
 
+
 local function tweenVehicleToPos(vehicle, seat, targetPos)
+	local startCFrame = vehicle:GetPivot()
+
+	local direction = (targetPos - startCFrame.Position).Unit
+	local yawToTarget = math.atan2(-direction.X, -direction.Z)
+	local yawAway = yawToTarget + math.rad(180)
+
+	local awayFacingCFrame = CFrame.new(startCFrame.Position) * CFrame.Angles(0, yawAway, 0)
+	local moveEndCFrame = CFrame.new(targetPos) * CFrame.Angles(0, yawAway, 0)
+	local finalLookCFrame = CFrame.new(targetPos) * CFrame.Angles(0, yawToTarget, 0)
+
+	local distance = (startCFrame.Position - targetPos).Magnitude
+	local travelTime = distance / 80
+	local spinTime = 0.5
+
+	local partCollisionMap = {}
+	for _, part in ipairs(vehicle:GetDescendants()) do
+		if part:IsA("BasePart") then
+			partCollisionMap[part] = part.CanCollide
+			part.CanCollide = false
+		end
+	end
+
+	local cfValue = Instance.new("CFrameValue")
+	cfValue.Value = awayFacingCFrame
+
+	local moveTween = TweenService:Create(cfValue, TweenInfo.new(travelTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Value = moveEndCFrame })
+	local spinTween = TweenService:Create(cfValue, TweenInfo.new(spinTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Value = finalLookCFrame })
+
+	local conn
+	conn = RunService.Heartbeat:Connect(function(dt)
+		if not vehicle or not vehicle.PrimaryPart then
+			conn:Disconnect()
+			return
+		end
+		local current = cfValue.Value
+		vehicle:PivotTo(current)
+	end)
+
+	moveTween:Play()
+	moveTween.Completed:Connect(function()
+		spinTween:Play()
+	end)
+
+	spinTween.Completed:Connect(function()
+		cfValue:Destroy()
+		conn:Disconnect()
+		for part, state in pairs(partCollisionMap) do
+			if part and part:IsDescendantOf(vehicle) then
+				part.CanCollide = state
+			end
+		end
+	end)
+end
+
+
+
+
+local function tweenVehicleToPos1(vehicle, seat, targetPos)
 	local startCFrame = vehicle:GetPivot()
 	local flatTarget = targetPos
 
