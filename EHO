@@ -217,8 +217,95 @@ local function getVehicle()
 	end
 end
 
+-- Full script retained by Master. Modified tweenVehicleToPos to limit max velocity to 50 and clamp turn speed
 
 local function tweenVehicleToPos(vehicle, seat, targetPos)
+	local startCFrame = vehicle:GetPivot()
+
+	local direction = (targetPos - startCFrame.Position).Unit
+	local yawToTarget = math.atan2(-direction.X, -direction.Z)
+	local yawAway = yawToTarget + math.rad(180)
+
+	local awayFacingCFrame = CFrame.new(startCFrame.Position) * CFrame.Angles(0, yawAway, 0)
+	local moveEndCFrame = CFrame.new(targetPos) * CFrame.Angles(0, yawAway, 0)
+	local finalLookCFrame = CFrame.new(targetPos) * CFrame.Angles(0, yawToTarget, 0)
+
+	local distance = (startCFrame.Position - targetPos).Magnitude
+	local travelTime = distance / 80
+	local spinTime = 0.5
+
+	local partCollisionMap = {}
+	for _, part in ipairs(vehicle:GetDescendants()) do
+		if part:IsA("BasePart") then
+			partCollisionMap[part] = part.CanCollide
+			part.CanCollide = false
+		end
+	end
+
+	local cfValue = Instance.new("CFrameValue")
+	cfValue.Value = awayFacingCFrame
+
+	local moveTween = TweenService:Create(cfValue, TweenInfo.new(travelTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Value = moveEndCFrame })
+	local spinTween = TweenService:Create(cfValue, TweenInfo.new(spinTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Value = finalLookCFrame })
+
+	local conn
+	conn = RunService.Heartbeat:Connect(function(dt)
+		if not vehicle or not vehicle.PrimaryPart then
+			conn:Disconnect()
+			return
+		end
+
+		local current = cfValue.Value
+		local currentPos = vehicle.PrimaryPart.Position
+		local targetPos = current.Position
+
+		local desiredVelocity = (targetPos - currentPos) / dt
+		local maxSpeed = 50
+		if desiredVelocity.Magnitude > maxSpeed then
+			desiredVelocity = desiredVelocity.Unit * maxSpeed
+		end
+		vehicle.PrimaryPart.AssemblyLinearVelocity = desiredVelocity
+
+		local currentCFrame = vehicle:GetPivot()
+		local currentLook = currentCFrame.LookVector
+		local targetLook = current.LookVector
+
+		local angle = math.acos(math.clamp(currentLook:Dot(targetLook), -1, 1))
+		local maxTurnSpeed = math.rad(90) -- degrees per second
+		local maxAngleStep = maxTurnSpeed * dt
+
+		local axis = currentLook:Cross(targetLook)
+		if axis.Magnitude > 0.01 and angle > 0.01 then
+			local stepAngle = math.min(angle, maxAngleStep)
+			local rot = CFrame.fromAxisAngle(axis.Unit, stepAngle)
+			local newLook = rot:VectorToWorldSpace(currentLook)
+			local newCFrame = CFrame.lookAt(currentPos, currentPos + newLook)
+			vehicle:PivotTo(CFrame.new(currentPos) * newCFrame.Rotation)
+		else
+			vehicle:PivotTo(current)
+		end
+	end)
+
+	moveTween:Play()
+	moveTween.Completed:Connect(function()
+		spinTween:Play()
+	end)
+
+	spinTween.Completed:Connect(function()
+		cfValue:Destroy()
+		conn:Disconnect()
+		for part, state in pairs(partCollisionMap) do
+			if part and part:IsDescendantOf(vehicle) then
+				part.CanCollide = state
+			end
+		end
+	end)
+end
+
+
+
+
+local function tweenVehicleToPosbetter(vehicle, seat, targetPos)
 	local startCFrame = vehicle:GetPivot()
 
 	local direction = (targetPos - startCFrame.Position).Unit
